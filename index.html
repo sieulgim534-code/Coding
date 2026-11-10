@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>설월여자고등학교 디지털 현미경 사진전</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 아이콘 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8fafc;
+        }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+        }
+        .card-zoom-img {
+            transition: transform 0.4s ease;
+        }
+        .card-zoom:hover .card-zoom-img {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- 상단 헤더 & 네비게이션 -->
+    <header class="sticky top-0 z-30 glass-header border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="resetFilter()">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-teal-100">
+                    <i class="fa-solid fa-microscope text-2xl"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-teal-600 tracking-wider block">설월여자고등학교</span>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">디지털 현미경 사진전</h1>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="openSubmitModal()" class="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-teal-600/20 transition-all hover:scale-105 active:scale-95">
+                    <i class="fa-solid fa-plus text-sm"></i>
+                    <span>작품 제출하기</span>
+                </button>
+                <button onclick="openAboutModal()" class="p-2.5 text-slate-500 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition">
+                    <i class="fa-solid fa-circle-info text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 히어로 섹션 및 검색바 -->
+    <section class="bg-gradient-to-b from-teal-50/60 to-transparent py-10 px-4 sm:px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <span class="inline-block px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-semibold mb-3">
+                🔬 작은 세상, 더 큰 발견
+            </span>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-4 leading-tight">
+                현미경 렌즈 너머 펼쳐지는 미시세계의 아름다움
+            </h2>
+            <p class="text-slate-600 mb-8 max-w-2xl mx-auto text-sm sm:text-base">
+                학생들이 직접 디지털 현미경으로 관찰하고 촬영한 멋진 순간들을 함께 공유하고 감상해보세요.
+            </p>
+
+            <!-- 검색 및 필터 -->
+            <div class="relative max-w-xl mx-auto">
+                <div class="relative flex items-center shadow-lg rounded-2xl bg-white border border-slate-200 overflow-hidden focus-within:ring-2 focus-within:ring-teal-500 transition">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 pl-5 pr-3 text-lg"></i>
+                    <input type="text" id="searchInput" oninput="filterPosts()" placeholder="작품 제목, 내용, 관찰자 이름으로 검색..." class="w-full py-4 pr-12 text-sm text-slate-800 placeholder-slate-400 focus:outline-none">
+                    <button onclick="clearSearch()" id="clearBtn" class="hidden absolute right-4 text-slate-400 hover:text-slate-600">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 메인 콘텐츠 영역 (작품 갤러리) -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-2">
+                <h3 class="text-lg font-bold text-slate-800">전시된 작품 목록</h3>
+                <span id="postCount" class="bg-slate-200 text-slate-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">0</span>
+            </div>
+            
+            <!-- 정렬 옵션 -->
+            <select id="sortSelect" onchange="sortPosts()" class="bg-white border border-slate-200 text-slate-600 text-xs sm:text-sm rounded-xl px-3 py-2 outline-none focus:border-teal-500 shadow-sm cursor-pointer">
+                <option value="latest">최신순</option>
+                <option value="likes">좋아요순</option>
+                <option value="oldest">오래된순</option>
+            </select>
+        </div>
+
+        <!-- 작품 카드 그리드 -->
+        <div id="postsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            <!-- JavaScript로 카드들이 여기에 동적으로 삽입됩니다 -->
+        </div>
+
+        <!-- 검색 결과가 없을 경우 -->
+        <div id="noResults" class="hidden text-center py-16">
+            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-3xl">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <p class="text-slate-600 font-medium text-lg">검색 조건에 맞는 작품이 없습니다.</p>
+            <p class="text-slate-400 text-sm mt-1">다른 검색어를 입력해보세요.</p>
+        </div>
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-sm text-slate-500">
+                © 2026 설월여자고등학교 디지털 현미경 사진전. All rights reserved.
+            </p>
+            <button onclick="openAboutModal()" class="text-xs text-teal-600 hover:underline mt-2 inline-block">
+                제작자 정보 보기
+            </button>
+        </div>
+    </footer>
+
+    <!-- 1. 작품 제출 모달 -->
+    <div id="submitModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden my-8 transform transition-all">
+            <div class="bg-gradient-to-r from-teal-600 to-emerald-600 p-6 text-white flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-camera text-xl"></i>
+                    <h3 class="font-bold text-lg">새 작품 제출하기</h3>
+                </div>
+                <button onclick="closeSubmitModal()" class="text-white/80 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="submitForm" onsubmit="handleFormSubmit(event)" class="p-6 space-x-0 space-y-4">
+                <!-- 학생 정보 (학년/반/번호/이름) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">학생 정보 *</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <div>
+                            <select id="grade" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:bg-white focus:border-teal-500 outline-none">
+                                <option value="">학년</option>
+                                <option value="1">1학년</option>
+                                <option value="2">2학년</option>
+                                <option value="3">3학년</option>
+                            </select>
+                        </div>
+                        <div>
+                            <input type="number" id="classNum" min="1" max="20" placeholder="반" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:bg-white focus:border-teal-500 outline-none">
+                        </div>
+                        <div>
+                            <input type="number" id="studentNum" min="1" max="40" placeholder="번호" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:bg-white focus:border-teal-500 outline-none">
+                        </div>
+                        <div>
+                            <input type="text" id="authorName" placeholder="이름" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:bg-white focus:border-teal-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 작품 제목 -->
+                <div>
+                    <label for="title" class="block text-xs font-bold text-slate-600 mb-1">작품 제목 *</label>
+                    <input type="text" id="title" placeholder="예: 양파 표피세포의 신비로운 구조" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:bg-white focus:border-teal-500 outline-none">
+                </div>
+
+                <!-- 관찰 내용 및 설명 -->
+                <div>
+                    <label for="description" class="block text-xs font-bold text-slate-600 mb-1">관찰 내용 및 작품 설명 *</label>
+                    <textarea id="description" rows="3" placeholder="관찰 대상, 배율, 소감 등을 자세히 작성해 주세요." required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:bg-white focus:border-teal-500 outline-none resize-none"></textarea>
+                </div>
+
+                <!-- 사진 업로드 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">현미경 사진 파일 *</label>
+                    <div class="border-2 border-dashed border-slate-300 hover:border-teal-500 rounded-2xl p-4 text-center cursor-pointer bg-slate-50 transition relative">
+                        <input type="file" id="imageInput" accept="image/*" required onchange="previewUploadImage(event)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                        <div id="uploadPlaceholder" class="space-y-1">
+                            <i class="fa-solid fa-cloud-arrow-up text-2xl text-teal-600"></i>
+                            <p class="text-xs text-slate-600 font-medium">클릭하여 사진을 선택하거나 드래그하세요.</p>
+                            <p class="text-[10px] text-slate-400">PNG, JPG, GIF 지원</p>
+                        </div>
+                        <div id="imagePreviewContainer" class="hidden">
+                            <img id="imagePreview" class="max-h-36 mx-auto rounded-lg shadow-sm object-cover">
+                            <span class="text-xs text-teal-600 font-medium mt-1 block">사진이 선택되었습니다 (클릭하여 변경)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 제출 버튼 -->
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeSubmitModal()" class="px-4 py-2.5 text-sm rounded-xl text-slate-600 hover:bg-slate-100 font-medium transition">취소</button>
+                    <button type="submit" class="px-5 py-2.5 text-sm rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-medium shadow-md shadow-teal-600/20 transition">작품 제출완료</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. 작품 상세 모달 (사진 클릭 시 오픈) -->
+    <div id="detailModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-4xl w-full shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col md:flex-row">
+            <!-- 이미지 영역 -->
+            <div class="md:w-3/5 bg-black flex items-center justify-center relative min-h-[250px] md:min-h-[450px]">
+                <img id="detailImage" src="" alt="상세 사진" class="max-h-[50vh] md:max-h-[85vh] w-auto object-contain">
+                <button onclick="closeDetailModal()" class="absolute top-4 right-4 md:hidden bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- 내용 & 댓글 영역 -->
+            <div class="md:w-2/5 p-6 flex flex-col justify-between h-full max-h-[50vh] md:max-h-[85vh] bg-white overflow-y-auto">
+                <div>
+                    <!-- 헤더 & 닫기 -->
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span id="detailStudentInfo" class="inline-block bg-teal-50 text-teal-700 text-xs font-semibold px-2.5 py-1 rounded-md mb-1">
+                                <!-- 학생 학년 반 번호 이름 -->
+                            </span>
+                            <h3 id="detailTitle" class="text-xl font-bold text-slate-900 leading-snug">
+                                <!-- 작품 제목 -->
+                            </h3>
+                        </div>
+                        <button onclick="closeDetailModal()" class="hidden md:block text-slate-400 hover:text-slate-600 text-xl p-1">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <!-- 작성일 및 관찰설명 -->
+                    <p id="detailDate" class="text-[11px] text-slate-400 mb-3"></p>
+                    <div class="bg-slate-50 rounded-2xl p-4 text-xs sm:text-sm text-slate-700 leading-relaxed mb-4 max-h-36 overflow-y-auto border border-slate-100">
+                        <p id="detailDescription" class="whitespace-pre-line"></p>
+                    </div>
+
+                    <!-- 좋아요 버튼 -->
+                    <div class="flex items-center justify-between border-y border-slate-100 py-3 mb-4">
+                        <button id="detailLikeBtn" onclick="toggleDetailLike()" class="flex items-center space-x-2 text-slate-600 hover:text-rose-500 transition px-3 py-1.5 rounded-xl hover:bg-rose-50">
+                            <i id="detailHeartIcon" class="fa-regular fa-heart text-lg text-rose-500"></i>
+                            <span class="text-xs font-bold">좋아요 <span id="detailLikeCount">0</span>개</span>
+                        </button>
+                        <span class="text-xs text-slate-400 flex items-center gap-1">
+                            <i class="fa-regular fa-comment"></i> 댓글 <span id="detailCommentCount">0</span>개
+                        </span>
+                    </div>
+
+                    <!-- 댓글 목록 -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">댓글목록</h4>
+                        <div id="commentsList" class="space-y-2.5 max-h-40 overflow-y-auto pr-1">
+                            <!-- 댓글 항목들이 dynamic하게 들어감 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 댓글 작성 폼 -->
+                <div class="pt-4 border-t border-slate-100 mt-4">
+                    <form onsubmit="handleAddComment(event)" class="space-y-2">
+                        <div class="flex gap-2">
+                            <input type="text" id="commentAuthor" placeholder="이름" required class="w-1/3 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs outline-none focus:border-teal-500">
+                            <input type="text" id="commentText" placeholder="응원의 댓글을 남겨보세요..." required class="w-2/3 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs outline-none focus:border-teal-500">
+                        </div>
+                        <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white rounded-xl py-2 text-xs font-medium transition shadow-sm">
+                            댓글 등록하기
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 제작자 정보 모달 -->
+    <div id="aboutModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center transform transition-all relative">
+            <button onclick="closeAboutModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">설월여자고등학교</h3>
+            <p class="text-xs text-teal-600 font-semibold mb-4">디지털 현미경 사진전 시스템</p>
+            <div class="bg-slate-50 rounded-2xl p-4 text-xs text-slate-600 space-y-2 text-left mb-5">
+                <p><strong>🏫 학교명:</strong> 설월여자고등학교</p>
+                <p><strong>🔬 지도/기획:</strong> 과학교육부 / 과학동아리</p>
+                <p><strong>💻 시스템 제작:</strong> 설월여고 학생 제작팀</p>
+                <p><strong>💡 제작 목적:</strong> 생명과학 수업 및 현미경 관찰 활동 결과물 공유 및 교학상장 전시</p>
+            </div>
+            <button onclick="closeAboutModal()" class="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-xl py-2.5 text-xs font-semibold shadow-md shadow-teal-600/20 transition">
+                확인
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript 로직 -->
+    <script>
+        // 초기 예시 데이터 (초기 로딩 시 기본 데이터 제공)
+        const initialSamplePosts = [
+            {
+                id: 1,
+                grade: "2",
+                classNum: "3",
+                studentNum: "15",
+                authorName: "김설월",
+                title: "양파 표피세포의 핵과 세포벽",
+                description: "아세트산카민 용액으로 염색한 양파 표피세포입니다. 배율 400배로 관찰하였으며 선명하게 염색된 핵과 두꺼운 세포벽이 뚜렷하게 관찰됩니다.",
+                imageUrl: "https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&w=800&q=80",
+                likes: 12,
+                liked: false,
+                date: "2026. 10. 20",
+                comments: [
+                    { author: "이민지", text: "염색이 정말 선명하게 되었네요! 멋집니다." },
+                    { author: "과학선생님", text: "세포의 구조가 아주 잘 관찰된 훌륭한 작품입니다." }
+                ]
+            },
+            {
+                id: 2,
+                grade: "1",
+                classNum: "5",
+                studentNum: "08",
+                authorName: "박지민",
+                title: "나비 날개 비늘의 미시적 패턴",
+                description: "호랑나비 날개 조각을 디지털 현미경 200배로 관찰한 사진입니다. 기하학적인 비늘 구조가 빛을 반사해 아름다운 색채를 만들어냅니다.",
+                imageUrl: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80",
+                likes: 25,
+                liked: false,
+                date: "2026. 10. 22",
+                comments: [
+                    { author: "정수아", text: "우와 무슨 예술 작품 같아요!" }
+                ]
+            },
+            {
+                id: 3,
+                grade: "2",
+                classNum: "1",
+                studentNum: "22",
+                authorName: "최유진",
+                title: "식물 잎의 기공과 보초세포",
+                description: "달개비 잎 뒷면의 표피를 벗겨 관찰한 기공입니다. 열려있는 기공과 이를 둘러싼 2개의 보초세포의 모습을 육안으로 똑똑히 볼 수 있었습니다.",
+                imageUrl: "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?auto=format&fit=crop&w=800&q=80",
+                likes: 18,
+                liked: false,
+                date: "2026. 10. 25",
+                comments: []
+            }
+        ];
+
+        // 앱 상태 데이터
+        let posts = [];
+        let currentDetailPostId = null;
+        let activeFilterKeyword = "";
+        let currentSort = "latest";
+
+        // 초기화 (로컬스토리지 또는 초기 sample 로드)
+        window.onload = function() {
+            const savedPosts = localStorage.getItem('seolwol_microscope_posts');
+            if (savedPosts) {
+                try {
+                    posts = JSON.parse(savedPosts);
+                } catch (e) {
+                    posts = initialSamplePosts;
+                }
+            } else {
+                posts = initialSamplePosts;
+                savePostsToStorage();
+            }
+            renderPosts();
+        };
+
+        function savePostsToStorage() {
+            localStorage.setItem('seolwol_microscope_posts', JSON.stringify(posts));
+        }
+
+        // 메인 게시물 렌더링
+        function renderPosts() {
+            const grid = document.getElementById('postsGrid');
+            const noResults = document.getElementById('noResults');
+            grid.innerHTML = '';
+
+            // 필터링
+            let filtered = posts.filter(post => {
+                const searchStr = `${post.title} ${post.description} ${post.authorName} ${post.grade}학년 ${post.classNum}반`.toLowerCase();
+                return searchStr.includes(activeFilterKeyword.toLowerCase());
+            });
+
+            // 정렬
+            filtered.sort((a, b) => {
+                if (currentSort === 'likes') return b.likes - a.likes;
+                if (currentSort === 'oldest') return a.id - b.id;
+                return b.id - a.id; // latest
+            });
+
+            document.getElementById('postCount').innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+                filtered.forEach(post => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col card-zoom";
+                    
+                    card.innerHTML = `
+                        <div class="relative overflow-hidden cursor-pointer bg-slate-100 aspect-video" onclick="openDetailModal(${post.id})">
+                            <img src="${post.imageUrl}" alt="${post.title}" class="w-full h-full object-cover card-zoom-img" onerror="this.src='https://placehold.co/600x400/e2e8f0/64748b?text=Image+Error'">
+                            <span class="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[11px] font-medium px-2.5 py-1 rounded-lg">
+                                ${post.grade}학년 ${post.classNum}반 ${post.studentNum}번 ${post.authorName}
+                            </span>
+                        </div>
+                        <div class="p-5 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-base mb-1.5 line-clamp-1 hover:text-teal-600 transition cursor-pointer" onclick="openDetailModal(${post.id})">
+                                    ${escapeHtml(post.title)}
+                                </h4>
+                                <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
+                                    ${escapeHtml(post.description)}
+                                </p>
+                            </div>
+                            <div class="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                                <span class="text-slate-400">${post.date}</span>
+                                <div class="flex items-center space-x-3">
+                                    <button onclick="toggleCardLike(event, ${post.id})" class="flex items-center space-x-1 ${post.liked ? 'text-rose-500 font-bold' : 'text-slate-400 hover:text-rose-500'} transition">
+                                        <i class="${post.liked ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
+                                        <span>${post.likes}</span>
+                                    </button>
+                                    <span class="text-slate-400 flex items-center space-x-1 cursor-pointer" onclick="openDetailModal(${post.id})">
+                                        <i class="fa-regular fa-comment"></i>
+                                        <span>${post.comments ? post.comments.length : 0}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        }
+
+        // 검색 기능
+        function filterPosts() {
+            const input = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('clearBtn');
+            activeFilterKeyword = input.value.trim();
+
+            if (activeFilterKeyword.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            renderPosts();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            activeFilterKeyword = '';
+            document.getElementById('clearBtn').classList.add('hidden');
+            renderPosts();
+        }
+
+        function resetFilter() {
+            clearSearch();
+        }
+
+        function sortPosts() {
+            currentSort = document.getElementById('sortSelect').value;
+            renderPosts();
+        }
+
+        // 카드의 하트(좋아요) 토글
+        function toggleCardLike(event, postId) {
+            event.stopPropagation();
+            const post = posts.find(p => p.id === postId);
+            if (post) {
+                post.liked = !post.liked;
+                post.likes += post.liked ? 1 : -1;
+                savePostsToStorage();
+                renderPosts();
+                if (currentDetailPostId === postId) {
+                    updateDetailModalLikeState();
+                }
+            }
+        }
+
+        // 제출 모달 관련
+        function openSubmitModal() {
+            document.getElementById('submitModal').classList.remove('hidden');
+        }
+
+        function closeSubmitModal() {
+            document.getElementById('submitModal').classList.add('hidden');
+            document.getElementById('submitForm').reset();
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+        }
+
+        // 사진 파일 업로드 미리보기 (Base64 변환)
+        let uploadedImageBase64 = "";
+
+        function previewUploadImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImageBase64 = e.target.result;
+                    document.getElementById('imagePreview').src = uploadedImageBase64;
+                    document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                    document.getElementById('uploadPlaceholder').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 폼 제출 처리
+        function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const grade = document.getElementById('grade').value;
+            const classNum = document.getElementById('classNum').value;
+            const studentNum = document.getElementById('studentNum').value;
+            const authorName = document.getElementById('authorName').value;
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+
+            if (!uploadedImageBase64) {
+                alert("사진을 선택해 주세요!");
+                return;
+            }
+
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}. ${today.getMonth() + 1}. ${today.getDate()}`;
+
+            const newPost = {
+                id: Date.now(),
+                grade: grade,
+                classNum: classNum,
+                studentNum: studentNum,
+                authorName: authorName,
+                title: title,
+                description: description,
+                imageUrl: uploadedImageBase64,
+                likes: 0,
+                liked: false,
+                date: dateStr,
+                comments: []
+            };
+
+            posts.unshift(newPost);
+            savePostsToStorage();
+            renderPosts();
+            closeSubmitModal();
+            uploadedImageBase64 = "";
+        }
+
+        // 상세 모달 열기
+        function openDetailModal(postId) {
+            currentDetailPostId = postId;
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+
+            document.getElementById('detailImage').src = post.imageUrl;
+            document.getElementById('detailStudentInfo').innerText = `${post.grade}학년 ${post.classNum}반 ${post.studentNum}번 ${post.authorName}`;
+            document.getElementById('detailTitle').innerText = post.title;
+            document.getElementById('detailDescription').innerText = post.description;
+            document.getElementById('detailDate').innerText = `제출일시: ${post.date}`;
+            
+            updateDetailModalLikeState();
+            renderComments();
+
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+            currentDetailPostId = null;
+        }
+
+        function updateDetailModalLikeState() {
+            const post = posts.find(p => p.id === currentDetailPostId);
+            if (!post) return;
+
+            document.getElementById('detailLikeCount').innerText = post.likes;
+            const heartIcon = document.getElementById('detailHeartIcon');
+            if (post.liked) {
+                heartIcon.className = "fa-solid fa-heart text-lg text-rose-500";
+            } else {
+                heartIcon.className = "fa-regular fa-heart text-lg text-rose-500";
+            }
+        }
+
+        function toggleDetailLike() {
+            if (!currentDetailPostId) return;
+            const post = posts.find(p => p.id === currentDetailPostId);
+            if (post) {
+                post.liked = !post.liked;
+                post.likes += post.liked ? 1 : -1;
+                savePostsToStorage();
+                updateDetailModalLikeState();
+                renderPosts();
+            }
+        }
+
+        // 댓글 렌더링
+        function renderComments() {
+            const post = posts.find(p => p.id === currentDetailPostId);
+            if (!post) return;
+
+            const list = document.getElementById('commentsList');
+            const comments = post.comments || [];
+            document.getElementById('detailCommentCount').innerText = comments.length;
+
+            if (comments.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-400 py-2">아직 댓글이 없습니다. 첫 댓글을 달아보세요!</p>`;
+                return;
+            }
+
+            list.innerHTML = comments.map(c => `
+                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
+                    <span class="font-bold text-slate-700 block mb-0.5">${escapeHtml(c.author)}</span>
+                    <p class="text-slate-600 leading-normal">${escapeHtml(c.text)}</p>
+                </div>
+            `).join('');
+        }
+
+        // 댓글 작성 처리
+        function handleAddComment(event) {
+            event.preventDefault();
+            if (!currentDetailPostId) return;
+
+            const authorInput = document.getElementById('commentAuthor');
+            const textInput = document.getElementById('commentText');
+
+            const author = authorInput.value.trim();
+            const text = textInput.value.trim();
+
+            if (!author || !text) return;
+
+            const post = posts.find(p => p.id === currentDetailPostId);
+            if (post) {
+                if (!post.comments) post.comments = [];
+                post.comments.push({ author, text });
+                savePostsToStorage();
+                renderComments();
+                renderPosts();
+
+                textInput.value = '';
+            }
+        }
+
+        // 제작자 정보 모달
+        function openAboutModal() {
+            document.getElementById('aboutModal').classList.remove('hidden');
+        }
+
+        function closeAboutModal() {
+            document.getElementById('aboutModal').classList.add('hidden');
+        }
+
+        // XSS 방지용 HTML 이스케이프
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
